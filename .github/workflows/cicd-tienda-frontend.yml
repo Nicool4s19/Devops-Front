@@ -12,10 +12,10 @@ jobs:
 
     steps:
     - name: Checkout código
-      uses: actions/checkout@v4
+      uses: actions/checkout@v1
 
     - name: Configurar credenciales AWS
-      uses: aws-actions/configure-aws-credentials@v5
+      uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -31,8 +31,8 @@ jobs:
       run: |
         cd frontend
         docker build -t tienda-frontend .
-        docker tag tienda-frontend:latest ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest
-        docker push ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest
+        docker tag tienda-frontend:latest ${{ secrets.ECR_REPO_URL_FRONT }}:latest
+        docker push ${{ secrets.ECR_REPO_URL_FRONT }}:latest
 
     - name: Desplegar Frontend vía SSM
       run: |
@@ -43,9 +43,9 @@ jobs:
           --parameters '{"commands":[
             "set -e",
             "aws ecr get-login-password --region '${{ secrets.AWS_REGION }}' | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
-            "docker pull ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest",
+            "docker pull ${{ secrets.ECR_REPO_URL_FRONT }}:latest",
             "docker stop tienda-frontend || true",
             "docker rm tienda-frontend || true",
-            "docker run -d --name tienda-frontend --restart always -p 80:80 ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest"
+            "docker run -d --name tienda-frontend --restart always -p 80:80 ${{ secrets.ECR_REPO_URL_FRONT }}:latest"
           ]}' \
           --output text
