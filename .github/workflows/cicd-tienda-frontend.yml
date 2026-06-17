@@ -1,5 +1,6 @@
 name: CI/CD Tienda Perritos - Frontend
 # Este workflow se activa al hacer push a la rama main en cualquier archivo dentro de la carpeta frontend.
+# Se encarga de construir la imagen Docker del frontend, subirla a Amazon ECR y luego desplegarla en la instancia EC2 usando AWS SSM.
 on:
   push:
     branches: [ "main" ]
