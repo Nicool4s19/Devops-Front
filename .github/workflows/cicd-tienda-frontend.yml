@@ -1,5 +1,5 @@
 name: CI/CD Tienda Perritos - Frontend
-
+# Este workflow se activa al hacer push a la rama main en cualquier archivo dentro de la carpeta frontend.
 on:
   push:
     branches: [ "main" ]
