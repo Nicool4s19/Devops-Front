@@ -9,7 +9,7 @@ const API_BASE = "/api/productos";
 
 //   Ejemplo: const API_BASE = "http://10.0.2.30:3001/api/productos" s  olo ejemplo;
 
-//esto se agrega para testear EL CI/CD v3
+//esto se agrega para testear EL CI/CD v4
 
 let editandoId = null;
 
