@@ -1,53 +1,48 @@
-name: CI/CD Tienda Perritos - Frontend
-# Este workflow se activa al hacer push a la rama main en cualquier archivo dentro de la carpeta frontend.
-# Se encarga de construir la imagen Docker del frontend, subirla a Amazon ECR y luego desplegarla en la instancia EC2 usando AWS SSM.
-# Requiere que las siguientes variables de entorno estén configuradas en los Secrets del repositorio:
+name: CI/CD Tienda Perritos - Frontend ECS
+
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
     paths:
       - "frontend/**"
+      - ".github/workflows/**"
 
 jobs:
   build-push-deploy-frontend:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout código
-      uses: actions/checkout@v1
+      - name: Checkout codigo
+        uses: actions/checkout@v4
 
-    - name: Configurar credenciales AWS
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-        aws-region: ${{ secrets.AWS_REGION }}
+      - name: Configurar credenciales AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: Login en Amazon ECR (runner)
-      uses: aws-actions/amazon-ecr-login@v1
-      with:
-        mask-password: true
+      - name: Login Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Build imagen Frontend y push a ECR
-      run: |
-        cd frontend
-        docker build -t tienda-frontend .
-        docker tag tienda-frontend:latest ${{ secrets.ECR_REPO_URL_FRONT }}:latest
-        docker push ${{ secrets.ECR_REPO_URL_FRONT }}:latest
+      - name: Build imagen Frontend
+        run: |
+          cd frontend
+          docker build -t tienda-frontend .
 
-    - name: Desplegar Frontend vía SSM
-      run: |
-        aws ssm send-command \
-          --instance-ids ${{ secrets.EC2_FRONTEND_INSTANCE_ID }} \
-          --document-name "AWS-RunShellScript" \
-          --comment "Actualizar tienda-frontend desde ECR" \
-          --parameters '{"commands":[
-            "set -e",
-            "aws ecr get-login-password --region '${{ secrets.AWS_REGION }}' | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
-            "docker pull ${{ secrets.ECR_REPO_URL_FRONT }}:latest",
-            "docker stop tienda-frontend || true",
-            "docker rm tienda-frontend || true",
-            "docker run -d --name tienda-frontend --restart always -p 80:80 ${{ secrets.ECR_REPO_URL_FRONT }}:latest"
-          ]}' \
-          --output text
+      - name: Tag imagen
+        run: |
+          docker tag tienda-frontend:latest ${{ secrets.ECR_REPO_URL_FRONT }}:latest
+
+      - name: Push imagen a ECR
+        run: |
+          docker push ${{ secrets.ECR_REPO_URL_FRONT }}:latest
+
+      - name: Desplegar Frontend en ECS
+        run: |
+          aws ecs update-service \
+            --cluster tienda-perrito-cluster \
+            --service Frontend-task-service \
+            --force-new-deployment
